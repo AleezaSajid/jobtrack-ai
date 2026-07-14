@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { Check } from 'lucide-react'
+import jobtrackLogo from '../assets/jobtrack-logo-full.png'
 
 const links = [
   {to: '/', label: 'Dashboard'},
@@ -79,11 +80,7 @@ export default function Sidebar(){
   return (
     <aside className="sidebar">
       <div className="brand">
-        <div className="logo">JT</div>
-        <div>
-          <h1 className="brand-title">JobTrack AI</h1>
-          <div className="brand-subtitle">Career OS</div>
-        </div>
+        <img className="brand-logo-img" src={jobtrackLogo} alt="JobTrack AI Logo" />
       </div>
 
       <NavLinks />

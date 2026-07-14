@@ -106,6 +106,14 @@ a {
   border-bottom: 1px solid var(--border);
 }
 
+.brand-logo-img {
+  display: block;
+  width: min(100%, 178px);
+  height: 50px;
+  object-fit: contain;
+  object-position: left center;
+}
+
 .logo {
   width: 34px;
   height: 34px;
