@@ -65,7 +65,7 @@ function ApplicationCard({app, selected, onSelect, onEdit, onDelete}){
 }
 
 export default function Applications(){
-  const { applications, updateApplication, deleteApplication } = useApplications()
+  const { applications, applicationsLoading, applicationsError, updateApplication, deleteApplication } = useApplications()
   const { showToast } = useToast()
   const [selectedId, setSelectedId] = useState(null)
   const [query, setQuery] = useState('')
@@ -94,16 +94,21 @@ export default function Applications(){
     })
   }, [applications, query, status, sortBy])
 
-  const handleDelete = (app) => {
-    deleteApplication(app.id)
-    if(selectedId === app.id){
-      setSelectedId(null)
+  const handleDelete = async (app) => {
+    try{
+      await deleteApplication(app.id)
+      if(String(selectedId) === String(app.id)){
+        setSelectedId(null)
+      }
+      if(String(editingId) === String(app.id)){
+        setEditingId(null)
+        setDraft(null)
+      }
+      showToast(`${app.company} removed from applications.`, 'success')
+    }catch(error){
+      console.error('Failed to delete application', error)
+      showToast('Application could not be deleted. Please try again.', 'error')
     }
-    if(editingId === app.id){
-      setEditingId(null)
-      setDraft(null)
-    }
-    showToast(`${app.company} removed from applications.`, 'success')
   }
 
   const handleEdit = (app) => {
@@ -122,16 +127,21 @@ export default function Applications(){
     setDraft((current) => ({...current, [field]: value}))
   }
 
-  const handleSave = (event) => {
+  const handleSave = async (event) => {
     event.preventDefault()
     if(!draft?.company?.trim() || !draft?.role?.trim()){
       showToast('Company and role are required.', 'error')
       return
     }
-    updateApplication(draft.id, draft)
-    setEditingId(null)
-    setDraft(null)
-    showToast(`${draft.company} updated.`, 'success')
+    try{
+      await updateApplication(draft.id, draft)
+      setEditingId(null)
+      setDraft(null)
+      showToast(`${draft.company} updated.`, 'success')
+    }catch(error){
+      console.error('Failed to update application', error)
+      showToast('Application could not be updated. Please try again.', 'error')
+    }
   }
 
   return (
@@ -142,6 +152,8 @@ export default function Applications(){
           <p className="lead">Track, organize, and manage every opportunity.</p>
         </div>
       </div>
+
+      {applicationsError ? <div className="state-banner error-state">{applicationsError}</div> : null}
 
       <div className="stats-grid applications-summary" aria-label="Application totals">
         <motion.div className="card stat-card elevated-stat" layout whileHover={{y: -3}}>
@@ -197,7 +209,13 @@ export default function Applications(){
         </select>
       </div>
 
-      {applications.length === 0 ? (
+      {applicationsLoading ? (
+        <div className="card applications-empty-state">
+          <div className="empty-illustration" aria-hidden="true">...</div>
+          <h2>Loading applications</h2>
+          <p>Fetching your latest application records.</p>
+        </div>
+      ) : applications.length === 0 ? (
         <div className="card applications-empty-state">
           <div className="empty-illustration" aria-hidden="true">+</div>
           <h2>No saved jobs yet</h2>

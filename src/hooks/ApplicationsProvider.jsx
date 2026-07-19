@@ -1,18 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { ApplicationsContext } from './applicationsContext'
+import { applicationsApi } from '../services/applicationsApi'
 
-const STORAGE_KEY = 'jobtrack_apps_v1'
 const RESUME_STORAGE_KEY = 'jobtrack_resumes_v1'
 const ASSISTANT_STORAGE_KEY = 'jobtrack_assistant_v1'
 const ACTIVITY_STORAGE_KEY = 'jobtrack_activity_v1'
 const ONBOARDING_STORAGE_KEY = 'jobtrack_onboarding_done_v1'
-
-const seed = [
-  {id: 1, company:'OpenWave Labs', role:'SWE Intern', location:'Remote', type:'Internship', status:'Applied', applied:'2026-05-18', notes:'Applied via website'},
-  {id: 2, company:'NovaTech', role:'Junior Frontend', location:'NYC', type:'Junior', status:'Interview', applied:'2026-05-25', notes:'Phone screen scheduled'},
-  {id: 3, company:'BrightCloud', role:'Backend Intern', location:'Remote', type:'Internship', status:'Rejected', applied:'2026-04-10', notes:'Not a fit'},
-  {id: 4, company:'PixelDrive', role:'Software Engineer Intern', location:'SF', type:'Internship', status:'Offer', applied:'2026-06-02', notes:'Accepted offer'},
-]
 
 const resumeSeed = [
   {id: 1, name:'Software Engineering Resume.pdf', target:'Frontend roles', updated:'2026-06-12', size:'248 KB', notes:'React, internship, and product project version'},
@@ -34,7 +27,7 @@ const isArray = (value) => Array.isArray(value)
 const isBoolean = (value) => typeof value === 'boolean'
 
 const normalizeApplication = (app, index) => ({
-  id: Number(app.id) || index + 1,
+  id: app.id ?? app._id ?? index + 1,
   company: String(app.company || 'Untitled company'),
   role: String(app.role || 'Untitled role'),
   location: String(app.location || ''),
@@ -85,12 +78,9 @@ const readStored = (key, fallback, validator = () => true, normalizer = (value) 
 }
 
 export default function ApplicationsProvider({children}){
-  const [applications, setApplications] = useState(() => readStored(
-    STORAGE_KEY,
-    seed,
-    isArray,
-    (items) => items.filter(isObject).map(normalizeApplication)
-  ))
+  const [applications, setApplications] = useState([])
+  const [applicationsLoading, setApplicationsLoading] = useState(true)
+  const [applicationsError, setApplicationsError] = useState('')
   const [resumes, setResumes] = useState(() => readStored(
     RESUME_STORAGE_KEY,
     resumeSeed,
@@ -115,13 +105,24 @@ export default function ApplicationsProvider({children}){
     isBoolean
   ))
 
-  useEffect(() => {
+  const loadApplications = useCallback(async () => {
+    setApplicationsLoading(true)
+    setApplicationsError('')
     try{
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(applications))
+      const records = await applicationsApi.getApplications()
+      setApplications(records.filter(isObject).map(normalizeApplication))
     }catch(error){
-      console.warn('Failed to save apps', error)
+      console.error('Failed to load applications', error)
+      setApplicationsError('Unable to load applications from the server.')
+      setApplications([])
+    }finally{
+      setApplicationsLoading(false)
     }
-  }, [applications])
+  }, [])
+
+  useEffect(() => {
+    loadApplications()
+  }, [loadApplications])
 
   useEffect(() => {
     try{
@@ -166,25 +167,34 @@ export default function ApplicationsProvider({children}){
     ].slice(0, 25))
   }
 
-  const addApplication = (app) => {
-    setApplications((prev) => [{...app, id: app.id || Math.max(0, ...prev.map((item) => item.id || 0)) + 1}, ...prev])
-    addActivity({type:'application', title:'Application added', detail:`${app.company} - ${app.role}`})
+  const addApplication = async (app) => {
+    const response = await applicationsApi.createApplication(app)
+    const created = normalizeApplication(isObject(response) ? response : app, applications.length)
+    setApplications((prev) => [created, ...prev])
+    addActivity({type:'application', title:'Application added', detail:`${created.company} - ${created.role}`})
+    return created
   }
 
-  const updateApplication = (id, patch) => {
-    const existing = applications.find((app) => app.id === id)
-    setApplications((prev) => prev.map((app) => app.id === id ? {...app, ...patch} : app))
+  const updateApplication = async (id, patch) => {
+    const existing = applications.find((app) => String(app.id) === String(id))
+    const merged = {...existing, ...patch}
+    const response = await applicationsApi.updateApplication(id, merged)
+    const updated = normalizeApplication(isObject(response) ? response : merged, 0)
+    setApplications((prev) => prev.map((app) => String(app.id) === String(id) ? updated : app))
     if(existing && patch.status && patch.status !== existing.status){
       addActivity({type:'status', title:`Moved to ${patch.status}`, detail:`${existing.company} - ${existing.role}`})
     }
+    return updated
   }
 
-  const deleteApplication = (id) => {
-    const deleted = applications.find((app) => app.id === id)
-    setApplications((prev) => prev.filter((app) => app.id !== id))
+  const deleteApplication = async (id) => {
+    const deleted = applications.find((app) => String(app.id) === String(id))
+    await applicationsApi.deleteApplication(id)
+    setApplications((prev) => prev.filter((app) => String(app.id) !== String(id)))
     if(deleted){
       addActivity({type:'application', title:'Application deleted', detail:`${deleted.company} - ${deleted.role}`})
     }
+    return deleted
   }
 
   const addResume = (resume) => {
@@ -213,10 +223,12 @@ export default function ApplicationsProvider({children}){
 
   const value = {
     applications,
+    applicationsLoading,
+    applicationsError,
+    reloadApplications: loadApplications,
     addApplication,
     updateApplication,
     deleteApplication,
-    setApplications,
     resumes,
     addResume,
     deleteResume,

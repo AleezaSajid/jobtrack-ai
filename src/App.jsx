@@ -9,14 +9,26 @@ import ApplicationsProvider from './hooks/ApplicationsProvider.jsx'
 import ResumeManager from './pages/ResumeManager'
 import AIAssistant from './pages/AIAssistant'
 import ToastProvider from './hooks/ToastProvider.jsx'
+import AuthProvider from './hooks/AuthProvider.jsx'
+import ProtectedRoute from './components/auth/ProtectedRoute.jsx'
+import Login from './pages/Login'
+import Signup from './pages/Signup'
 
 export default function App(){
   return (
     <ToastProvider>
-      <ApplicationsProvider>
+      <AuthProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<MainLayout/>}>
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/" element={
+              <ProtectedRoute>
+                <ApplicationsProvider>
+                  <MainLayout/>
+                </ApplicationsProvider>
+              </ProtectedRoute>
+            }>
               <Route index element={<Dashboard/>} />
               <Route path="applications" element={<Applications/>} />
               <Route path="add-job" element={<AddJob/>} />
@@ -28,7 +40,7 @@ export default function App(){
             </Route>
           </Routes>
         </BrowserRouter>
-      </ApplicationsProvider>
+      </AuthProvider>
     </ToastProvider>
   )
 }

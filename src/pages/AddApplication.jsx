@@ -28,17 +28,23 @@ export default function AddApplication(){
     showToast('Ready for a new application.', 'success')
   }
 
-  const onSubmit = (e) =>{
+  const onSubmit = async (e) =>{
     e.preventDefault()
     if(!form.company.trim() || !form.role.trim()){
       setError('Company and role are required before this can be added.')
       showToast('Company and role are required.', 'error')
       return
     }
-    addApplication(form)
-    showToast(`${form.company} added to your live pipeline.`, 'success')
-    setForm(initialApplicationForm)
-    navigate('/applications')
+    try{
+      await addApplication(form)
+      showToast(`${form.company} added to your live pipeline.`, 'success')
+      setForm(initialApplicationForm)
+      navigate('/applications')
+    }catch(error){
+      console.error('Failed to add application', error)
+      setError('Application could not be saved. Please try again.')
+      showToast('Application could not be saved. Please try again.', 'error')
+    }
   }
 
   return (

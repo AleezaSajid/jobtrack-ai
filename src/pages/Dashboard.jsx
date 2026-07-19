@@ -112,7 +112,7 @@ function activityCopy(app){
 }
 
 export default function Dashboard(){
-  const { applications, updateApplication } = useApplications()
+  const { applications, applicationsLoading, applicationsError, updateApplication } = useApplications()
   const { showToast } = useToast()
   const [loading, setLoading] = useState(true)
 
@@ -139,12 +139,17 @@ export default function Dashboard(){
     : 'Next priority: add your next application'
   const greeting = getGreeting()
 
-  const onDrop = (event, key) =>{
-    const id = Number(event.dataTransfer.getData('text/plain'))
-    const app = applications.find((item) => item.id === id)
-    updateApplication(id, { status: key })
-    if(app && app.status !== key){
-      showToast(`${app.company} moved to ${key}.`, 'success')
+  const onDrop = async (event, key) =>{
+    const id = event.dataTransfer.getData('text/plain')
+    const app = applications.find((item) => String(item.id) === String(id))
+    try{
+      await updateApplication(id, { status: key })
+      if(app && app.status !== key){
+        showToast(`${app.company} moved to ${key}.`, 'success')
+      }
+    }catch(error){
+      console.error('Failed to move application', error)
+      showToast('Application status could not be updated. Please try again.', 'error')
     }
   }
 
@@ -152,19 +157,29 @@ export default function Dashboard(){
     event.dataTransfer.setData('text/plain', String(id))
   }
 
-  const moveWithKeyboard = (event, app) => {
+  const moveWithKeyboard = async (event, app) => {
     const index = columns.findIndex((col) => col.key === (app.status || 'Applied'))
     if(event.key === 'ArrowRight' && index < columns.length - 1){
-      updateApplication(app.id, { status: columns[index + 1].key })
-      showToast(`${app.company} moved to ${columns[index + 1].key}.`, 'success')
+      try{
+        await updateApplication(app.id, { status: columns[index + 1].key })
+        showToast(`${app.company} moved to ${columns[index + 1].key}.`, 'success')
+      }catch(error){
+        console.error('Failed to move application', error)
+        showToast('Application status could not be updated. Please try again.', 'error')
+      }
     }
     if(event.key === 'ArrowLeft' && index > 0){
-      updateApplication(app.id, { status: columns[index - 1].key })
-      showToast(`${app.company} moved to ${columns[index - 1].key}.`, 'success')
+      try{
+        await updateApplication(app.id, { status: columns[index - 1].key })
+        showToast(`${app.company} moved to ${columns[index - 1].key}.`, 'success')
+      }catch(error){
+        console.error('Failed to move application', error)
+        showToast('Application status could not be updated. Please try again.', 'error')
+      }
     }
   }
 
-  if(loading){
+  if(loading || applicationsLoading){
     return (
       <div className="page dashboard-page">
         <div className="skeleton dashboard-overview-skeleton" />
@@ -178,6 +193,7 @@ export default function Dashboard(){
 
   return (
     <motion.div className="page dashboard-page" initial={{opacity: 0}} animate={{opacity: 1}}>
+      {applicationsError ? <div className="state-banner error-state">{applicationsError}</div> : null}
       <motion.section className="card dashboard-command-header" initial={{opacity: 0, y: 12}} animate={{opacity: 1, y: 0}}>
         <div className="dashboard-command-copy">
           <h1>{greeting.title}</h1>

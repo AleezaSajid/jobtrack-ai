@@ -111,7 +111,6 @@ export default function Settings(){
   }
 
   const resetDemoData = () => {
-    localStorage.removeItem('jobtrack_apps_v1')
     localStorage.removeItem('jobtrack_resumes_v1')
     localStorage.removeItem('jobtrack_activity_v1')
     localStorage.removeItem('jobtrack_assistant_v1')
