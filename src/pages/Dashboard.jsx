@@ -149,7 +149,7 @@ export default function Dashboard(){
       }
     }catch(error){
       console.error('Failed to move application', error)
-      showToast('Application status could not be updated. Please try again.', 'error')
+      showToast(error?.message || 'Application status could not be updated. Please try again.', 'error')
     }
   }
 
@@ -165,7 +165,7 @@ export default function Dashboard(){
         showToast(`${app.company} moved to ${columns[index + 1].key}.`, 'success')
       }catch(error){
         console.error('Failed to move application', error)
-        showToast('Application status could not be updated. Please try again.', 'error')
+        showToast(error?.message || 'Application status could not be updated. Please try again.', 'error')
       }
     }
     if(event.key === 'ArrowLeft' && index > 0){
@@ -174,7 +174,7 @@ export default function Dashboard(){
         showToast(`${app.company} moved to ${columns[index - 1].key}.`, 'success')
       }catch(error){
         console.error('Failed to move application', error)
-        showToast('Application status could not be updated. Please try again.', 'error')
+        showToast(error?.message || 'Application status could not be updated. Please try again.', 'error')
       }
     }
   }

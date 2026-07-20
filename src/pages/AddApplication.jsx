@@ -4,6 +4,8 @@ import { useApplications } from '../hooks/useApplications.jsx'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../hooks/useToast'
 
+const JOB_TYPES = ['Full-time', 'Part-time', 'Internship', 'Contract', 'Freelance', 'Remote']
+
 const initialApplicationForm = {company:'',role:'',location:'',type:'Internship',status:'Applied',applied:'',notes:''}
 
 export default function AddApplication(){
@@ -42,8 +44,9 @@ export default function AddApplication(){
       navigate('/applications')
     }catch(error){
       console.error('Failed to add application', error)
-      setError('Application could not be saved. Please try again.')
-      showToast('Application could not be saved. Please try again.', 'error')
+      const message = error?.message || 'Application could not be saved. Please try again.'
+      setError(message)
+      showToast(message, 'error')
     }
   }
 
@@ -88,9 +91,9 @@ export default function AddApplication(){
               <div className="field">
                 <label htmlFor="type">Job Type</label>
                 <select id="type" className="input" name="type" value={form.type} onChange={onChange}>
-                  <option>Internship</option>
-                  <option>Junior</option>
-                  <option>Senior</option>
+                  {JOB_TYPES.map((jobType) => (
+                    <option key={jobType}>{jobType}</option>
+                  ))}
                 </select>
               </div>
               <div className="field">

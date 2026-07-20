@@ -5671,6 +5671,16 @@ body .add-application-page .page-badge {
   font-weight: 850;
 }
 
+.auth-boot-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: var(--muted-strong);
+  font-size: 14px;
+  font-weight: 800;
+}
+
 .auth-card-footer {
   padding-top: 2px;
   color: var(--muted);

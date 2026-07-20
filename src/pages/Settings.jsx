@@ -191,11 +191,12 @@ export default function Settings(){
             </Field>
             <Field label="Default job type">
               <select value={settings.defaultJobType} onChange={(event) => updateSetting('defaultJobType', event.target.value)}>
-                <option>Internship</option>
-                <option>Junior</option>
                 <option>Full-time</option>
                 <option>Part-time</option>
+                <option>Internship</option>
                 <option>Contract</option>
+                <option>Freelance</option>
+                <option>Remote</option>
               </select>
             </Field>
             <Field label="Sort applications by">
