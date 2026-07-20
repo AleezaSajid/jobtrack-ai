@@ -12,7 +12,7 @@ import { useToast } from '../hooks/useToast'
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 
 export default function Login(){
-  const { isAuthenticated, login } = useAuth()
+  const { isAuthenticated, authLoading, login } = useAuth()
   const { showToast } = useToast()
   const navigate = useNavigate()
   const location = useLocation()
@@ -20,6 +20,14 @@ export default function Login(){
   const [errors, setErrors] = useState({})
   const [status, setStatus] = useState('idle')
   const from = location.state?.from?.pathname || '/'
+
+  if(authLoading){
+    return (
+      <AuthLayout>
+        <div className="auth-state" role="status" aria-live="polite">Checking your session...</div>
+      </AuthLayout>
+    )
+  }
 
   if(isAuthenticated){
     return <Navigate to="/" replace />
@@ -56,7 +64,7 @@ export default function Login(){
     }catch(error){
       console.error('Login failed', error)
       setStatus('error')
-      showToast('Login failed. Please try again.', 'error')
+      showToast(error?.message || 'Login failed. Please try again.', 'error')
     }
   }
 

@@ -1,5 +1,25 @@
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api').replace(/\/$/, '')
 
+const parseErrorMessage = async (response) => {
+  const fallback = `Request failed with status ${response.status}`
+  const text = await response.text().catch(() => '')
+
+  if (text) {
+    try {
+      const data = JSON.parse(text)
+      const error = new Error(data?.message || fallback)
+      error.success = false
+      error.data = data
+      error.status = response.status
+      return error
+    } catch {
+      return new Error(text)
+    }
+  }
+
+  return new Error(fallback)
+}
+
 const request = async (path, options = {}) => {
   const token = localStorage.getItem('token')
   const headers = {
@@ -11,14 +31,18 @@ const request = async (path, options = {}) => {
     headers.Authorization = `Bearer ${token}`
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers,
-  })
+  let response
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      headers,
+    })
+  } catch (error) {
+    throw new Error(error?.message || 'Unable to reach the server. Please try again.')
+  }
 
   if (!response.ok) {
-    const message = await response.text().catch(() => '')
-    throw new Error(message || `Request failed with status ${response.status}`)
+    throw await parseErrorMessage(response)
   }
 
   if (response.status === 204) {

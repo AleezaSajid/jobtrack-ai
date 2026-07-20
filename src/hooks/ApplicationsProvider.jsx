@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ApplicationsContext } from './applicationsContext'
 import { applicationsApi } from '../services/applicationsApi'
+import { useAuth } from './useAuth'
 
 const RESUME_STORAGE_KEY = 'jobtrack_resumes_v1'
 const ASSISTANT_STORAGE_KEY = 'jobtrack_assistant_v1'
@@ -78,8 +79,9 @@ const readStored = (key, fallback, validator = () => true, normalizer = (value) 
 }
 
 export default function ApplicationsProvider({children}){
+  const { isAuthenticated, user } = useAuth()
   const [applications, setApplications] = useState([])
-  const [applicationsLoading, setApplicationsLoading] = useState(true)
+  const [applicationsLoading, setApplicationsLoading] = useState(false)
   const [applicationsError, setApplicationsError] = useState('')
   const [resumes, setResumes] = useState(() => readStored(
     RESUME_STORAGE_KEY,
@@ -105,7 +107,20 @@ export default function ApplicationsProvider({children}){
     isBoolean
   ))
 
+  const clearApplications = useCallback(() => {
+    setApplications([])
+    setApplicationsError('')
+    setApplicationsLoading(false)
+  }, [])
+
   const loadApplications = useCallback(async () => {
+    const token = localStorage.getItem('token')
+
+    if (!isAuthenticated || !user || !token) {
+      clearApplications()
+      return
+    }
+
     setApplicationsLoading(true)
     setApplicationsError('')
     try{
@@ -113,16 +128,21 @@ export default function ApplicationsProvider({children}){
       setApplications(records.filter(isObject).map(normalizeApplication))
     }catch(error){
       console.error('Failed to load applications', error)
-      setApplicationsError('Unable to load applications from the server.')
+      setApplicationsError(error?.message || 'Unable to load applications from the server.')
       setApplications([])
     }finally{
       setApplicationsLoading(false)
     }
-  }, [])
+  }, [clearApplications, isAuthenticated, user])
 
   useEffect(() => {
+    if (!isAuthenticated || !user) {
+      clearApplications()
+      return
+    }
+
     loadApplications()
-  }, [loadApplications])
+  }, [clearApplications, isAuthenticated, loadApplications, user])
 
   useEffect(() => {
     try{

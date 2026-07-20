@@ -107,7 +107,7 @@ export default function Applications(){
       showToast(`${app.company} removed from applications.`, 'success')
     }catch(error){
       console.error('Failed to delete application', error)
-      showToast('Application could not be deleted. Please try again.', 'error')
+      showToast(error?.message || 'Application could not be deleted. Please try again.', 'error')
     }
   }
 
@@ -140,7 +140,7 @@ export default function Applications(){
       showToast(`${draft.company} updated.`, 'success')
     }catch(error){
       console.error('Failed to update application', error)
-      showToast('Application could not be updated. Please try again.', 'error')
+      showToast(error?.message || 'Application could not be updated. Please try again.', 'error')
     }
   }
 
